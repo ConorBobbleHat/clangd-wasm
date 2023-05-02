@@ -1,0 +1,24 @@
+{
+  "name": "@clangd-wasm/clangd-wasm",
+  "version": "15.0.7",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && webpack --mode production",
+    "build:dev": "rimraf dist && webpack --mode development"
+  },
+  "author": "ConorBobbleHat",
+  "license": "MIT",
+  "devDependencies": {
+    "rimraf": "^5.0.0",
+    "ts-loader": "^9.4.2",
+    "typescript": "^5.0.4",
+    "webpack": "^5.80.0",
+    "webpack-cli": "^5.0.2",
+    "@clangd-wasm/core": "^15.0.7"
+  },
+  "dependencies": {
+    "@open-rpc/client-js": "^1.8.1"
+  }
+}
