@@ -1,7 +1,6 @@
 {
   "name": "@clangd-wasm/clangd-wasm",
   "version": "15.0.7",
-  "description": "",
   "main": "dist/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
@@ -20,5 +19,14 @@
   },
   "dependencies": {
     "@open-rpc/client-js": "^1.8.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ConorBobbleHat/clangd-wasm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ConorBobbleHat/clangd-wasm/issues"
+  },
+  "homepage": "https://github.com/ConorBobbleHat/clangd-wasm#readme",
+  "description": ""
 }
