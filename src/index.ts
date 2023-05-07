@@ -6,12 +6,28 @@ import * as createClangdModule from "@clangd-wasm/core/dist/clangd"
 
 import packageInfo from "../package.json"
 
+// Adapted from https://github.com/ffmpegwasm/ffmpeg.wasm/blob/master/src/browser/getCreateFFmpegCore.js 
 const toBlobURL = async (url: string, mimeType: string) => {
     const buf = await (await fetch(url)).arrayBuffer();
     const blob = new Blob([buf], { type: mimeType });
     const blobURL = URL.createObjectURL(blob);
     return blobURL;
 };
+
+type CompileCommandEntry = {
+    directory: string,
+    file: string,
+    arguments: string[],
+    output?: string 
+};
+
+type CompileCommands = CompileCommandEntry[];
+
+type ClangdStdioTransportOptions = {
+    baseURL?: string,
+    debug?: boolean,
+    compileCommands?: CompileCommands
+}
 
 class ClangdModule {
     FS: any
@@ -24,13 +40,12 @@ class ClangdModule {
     mainJSObjectURL: string;
     workerJSObjectURL: string;
 
-    baseURL: string
-    debug: boolean
+    options: ClangdStdioTransportOptions
     onMessageHook: (data: string) => void
+    baseURL: any
 
-    constructor(baseURL: string, debug: boolean, onMessageHook: (data: string) => void) {
-        this.baseURL = baseURL
-        this.debug = debug
+    constructor(options: ClangdStdioTransportOptions, onMessageHook: (data: string) => void) {
+        this.options = options
         this.onMessageHook = onMessageHook
     }
 
@@ -69,7 +84,7 @@ class ClangdModule {
         }
 
         const stderr = function (outByte: number) {
-            if (!this.debug)
+            if (!module.options.debug)
                 return;
 
             module.stderrBuf.push(outByte)
@@ -89,6 +104,10 @@ class ClangdModule {
         }
 
         module.FS.init(stdin, stdout, stderr)
+
+        // There's no way to load a compile_commands.json config by the command line.
+        // We need to write it into the project folder for it to be loaded.
+        module.FS.writeFile("/compile_commands.json", JSON.stringify(module.options.compileCommands));
     }
 
     locateFile(path: string, _prefix: string) {
@@ -98,12 +117,12 @@ class ClangdModule {
             return this.mainJSObjectURL;
         }
 
-        return this.baseURL + "/" + path;
+        return this.options.baseURL + "/" + path;
     }
 
     async start() {
-        this.mainJSObjectURL = await toBlobURL(`${this.baseURL}/clangd.js`, "application/javascript");
-        this.workerJSObjectURL = await toBlobURL(`${this.baseURL}/clangd.worker.js`, "application/javascript");
+        this.mainJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.js`, "application/javascript");
+        this.workerJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.worker.js`, "application/javascript");
 
         this.mainScriptUrlOrBlob = this.mainJSObjectURL;
 
@@ -111,11 +130,6 @@ class ClangdModule {
     }
 
     messageBuf: object[] = []
-}
-
-type ClangdStdioTransportOptions = {
-    baseUrl?: string,
-    debug?: boolean
 }
 
 // Transport structure from https://gitlab.com/aedge/codemirror-web-workers-lsp-demo
@@ -132,15 +146,19 @@ class ClangdStdioTransport extends Transport {
             this.options = {}
         }
 
-        if (this.options.baseUrl === undefined) {
-            this.options.baseUrl = `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`;
+        if (this.options.baseURL === undefined) {
+            this.options.baseURL = `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`;
         }
 
         if (this.options.debug === undefined) {
             this.options.debug = false;
         }
 
-        this.module = new ClangdModule(this.options.baseUrl, this.options.debug, (data) => {
+        if (this.options.compileCommands === undefined) {
+            this.options.compileCommands = []
+        }
+
+        this.module = new ClangdModule(this.options, (data) => {
             if (this.options.debug) {
                 console.log("LS to editor <-", JSON.parse(data))
             }
@@ -171,4 +189,4 @@ class ClangdStdioTransport extends Transport {
     public close(): void { }
 }
 
-export { ClangdStdioTransportOptions, ClangdStdioTransport }
+export { ClangdStdioTransportOptions, CompileCommands, ClangdStdioTransport }
