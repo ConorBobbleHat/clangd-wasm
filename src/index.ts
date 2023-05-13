@@ -8,24 +8,25 @@ import packageInfo from "../package.json"
 
 // Adapted from https://github.com/ffmpegwasm/ffmpeg.wasm/blob/master/src/browser/getCreateFFmpegCore.js 
 const toBlobURL = async (url: string, mimeType: string) => {
-    const buf = await (await fetch(url)).arrayBuffer();
-    const blob = new Blob([buf], { type: mimeType });
-    const blobURL = URL.createObjectURL(blob);
-    return blobURL;
-};
+    const buf = await (await fetch(url)).arrayBuffer()
+    const blob = new Blob([buf], { type: mimeType })
+    const blobURL = URL.createObjectURL(blob)
+    return blobURL
+}
 
 type CompileCommandEntry = {
     directory: string,
     file: string,
     arguments: string[],
     output?: string 
-};
+}
 
-type CompileCommands = CompileCommandEntry[];
+type CompileCommands = CompileCommandEntry[]
 
 type ClangdStdioTransportOptions = {
     baseURL?: string,
     debug?: boolean,
+    initialFileState?: {[filename: string]: string},
     compileCommands?: CompileCommands
 }
 
@@ -37,8 +38,8 @@ class ClangdModule {
     outputMessageLength: null | number = null
     stderrBuf: number[] = []
 
-    mainJSObjectURL: string;
-    workerJSObjectURL: string;
+    mainJSObjectURL: string
+    workerJSObjectURL: string
 
     options: ClangdStdioTransportOptions
     onMessageHook: (data: string) => void
@@ -85,7 +86,7 @@ class ClangdModule {
 
         const stderr = function (outByte: number) {
             if (!module.options.debug)
-                return;
+                return
 
             module.stderrBuf.push(outByte)
 
@@ -105,26 +106,30 @@ class ClangdModule {
 
         module.FS.init(stdin, stdout, stderr)
 
+        for (const filename in module.options.initialFileState) {
+            module.FS.writeFile(filename, module.options.initialFileState[filename])
+        }
+
         // There's no way to load a compile_commands.json config by the command line.
         // We need to write it into the project folder for it to be loaded.
-        module.FS.writeFile("/compile_commands.json", JSON.stringify(module.options.compileCommands));
+        module.FS.writeFile("/compile_commands.json", JSON.stringify(module.options.compileCommands))
     }
 
     locateFile(path: string, _prefix: string) {
         if (path.endsWith(".worker.js")) {
-            return this.workerJSObjectURL;
+            return this.workerJSObjectURL
         } else if (path.endsWith(".js")) {
-            return this.mainJSObjectURL;
+            return this.mainJSObjectURL
         }
 
-        return this.options.baseURL + "/" + path;
+        return this.options.baseURL + "/" + path
     }
 
     async start() {
-        this.mainJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.js`, "application/javascript");
-        this.workerJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.worker.js`, "application/javascript");
+        this.mainJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.js`, "application/javascript")
+        this.workerJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.worker.js`, "application/javascript")
 
-        this.mainScriptUrlOrBlob = this.mainJSObjectURL;
+        this.mainScriptUrlOrBlob = this.mainJSObjectURL
 
         createClangdModule(this)
     }
@@ -142,19 +147,23 @@ class ClangdStdioTransport extends Transport {
 
         this.options = options
 
-        if (this.options === undefined) {
+        if (!this.options) {
             this.options = {}
         }
 
-        if (this.options.baseURL === undefined) {
-            this.options.baseURL = `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`;
+        if (!this.options.baseURL) {
+            this.options.baseURL = `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`
         }
 
-        if (this.options.debug === undefined) {
-            this.options.debug = false;
+        if (!this.options.debug) {
+            this.options.debug = false
         }
 
-        if (this.options.compileCommands === undefined) {
+        if (!this.options.initialFileState) {
+            this.options.initialFileState = {}
+        }
+
+        if (!this.options.compileCommands) {
             this.options.compileCommands = []
         }
 
@@ -163,13 +172,13 @@ class ClangdStdioTransport extends Transport {
                 console.log("LS to editor <-", JSON.parse(data))
             }
 
-            this.transportRequestManager.resolveResponse(data);
-        });
+            this.transportRequestManager.resolveResponse(data)
+        })
     }
 
     public connect(): Promise<void> {
         return new Promise(async resolve => {
-            await this.module.start();
+            await this.module.start()
             resolve()
         })
     }
