@@ -1,6 +1,6 @@
 {
   "name": "@clangd-wasm/clangd-wasm",
-  "version": "15.0.7-dev2",
+  "version": "15.0.7-dev3",
   "main": "dist/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
