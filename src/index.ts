@@ -27,12 +27,14 @@ type ClangdStdioTransportOptions = {
     baseURL?: string,
     debug?: boolean,
     initialFileState?: {[filename: string]: string},
-    compileCommands?: CompileCommands
+    compileCommands?: CompileCommands,
+    cliArguments?: string[]
 }
 
 class ClangdModule {
     FS: any
     mainScriptUrlOrBlob: string
+    arguments: string[] = []
 
     outputMessageBuf: number[] = []
     outputMessageLength: null | number = null
@@ -113,6 +115,8 @@ class ClangdModule {
         // There's no way to load a compile_commands.json config by the command line.
         // We need to write it into the project folder for it to be loaded.
         module.FS.writeFile("/compile_commands.json", JSON.stringify(module.options.compileCommands))
+    
+        module.arguments.push(...module.options.cliArguments);
     }
 
     locateFile(path: string, _prefix: string) {
@@ -142,6 +146,10 @@ class ClangdStdioTransport extends Transport {
     module: ClangdModule
     options: ClangdStdioTransportOptions
 
+    static getDefaultWasmURL() {
+        return `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist/clangd.wasm`
+    }
+
     constructor(options?: ClangdStdioTransportOptions) {
         super()
 
@@ -152,7 +160,7 @@ class ClangdStdioTransport extends Transport {
         }
 
         if (!this.options.baseURL) {
-            this.options.baseURL = `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`
+            this.options.baseURL = ClangdStdioTransport.getDefaultWasmURL()
         }
 
         if (!this.options.debug) {
@@ -165,6 +173,10 @@ class ClangdStdioTransport extends Transport {
 
         if (!this.options.compileCommands) {
             this.options.compileCommands = []
+        }
+
+        if (!this.options.cliArguments) {
+            this.options.cliArguments = []
         }
 
         this.module = new ClangdModule(this.options, (data) => {
