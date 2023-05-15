@@ -146,8 +146,12 @@ class ClangdStdioTransport extends Transport {
     module: ClangdModule
     options: ClangdStdioTransportOptions
 
+    static getDefaultBaseURL() {
+        return `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`
+    }
+
     static getDefaultWasmURL() {
-        return `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist/clangd.wasm`
+        return `${ClangdStdioTransport.getDefaultBaseURL()}/clangd.wasm`
     }
 
     constructor(options?: ClangdStdioTransportOptions) {
@@ -160,7 +164,7 @@ class ClangdStdioTransport extends Transport {
         }
 
         if (!this.options.baseURL) {
-            this.options.baseURL = ClangdStdioTransport.getDefaultWasmURL()
+            this.options.baseURL = ClangdStdioTransport.getDefaultBaseURL()
         }
 
         if (!this.options.debug) {
