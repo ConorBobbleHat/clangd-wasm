@@ -3,6 +3,7 @@ import type { JSONRPCRequestData, IJSONRPCData } from "@open-rpc/client-js/build
 import { Transport } from "@open-rpc/client-js/build/transports/Transport"
 
 import * as createClangdModule from "@clangd-wasm/core/dist/clangd"
+import * as createClangdModuleSmall from "@clangd-wasm/core-small/dist/clangd"
 
 import packageInfo from "../package.json"
 
@@ -28,7 +29,8 @@ type ClangdStdioTransportOptions = {
     debug?: boolean,
     initialFileState?: {[filename: string]: string},
     compileCommands?: CompileCommands,
-    cliArguments?: string[]
+    cliArguments?: string[],
+    useSmallBinary?: boolean,
 }
 
 class ClangdModule {
@@ -133,9 +135,10 @@ class ClangdModule {
         this.mainJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.js`, "application/javascript")
         this.workerJSObjectURL = await toBlobURL(`${this.options.baseURL}/clangd.worker.js`, "application/javascript")
 
-        this.mainScriptUrlOrBlob = this.mainJSObjectURL
+        this.mainScriptUrlOrBlob = this.mainJSObjectURL;
 
-        createClangdModule(this)
+        const moduleFunc = this.options.useSmallBinary ? createClangdModuleSmall : createClangdModule
+        moduleFunc(this)
     }
 
     messageBuf: object[] = []
@@ -146,12 +149,14 @@ class ClangdStdioTransport extends Transport {
     module: ClangdModule
     options: ClangdStdioTransportOptions
 
-    static getDefaultBaseURL() {
-        return `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies['@clangd-wasm/core'].substring(1)}/dist`
+    static getDefaultBaseURL(useSmallBinary: boolean) 
+    {
+        const packageID = useSmallBinary ? "@clangd-wasm/core-small" : "@clangd-wasm/core"
+        return `https://unpkg.com/@clangd-wasm/core@${packageInfo.devDependencies[packageID].substring(1)}/dist`
     }
 
-    static getDefaultWasmURL() {
-        return `${ClangdStdioTransport.getDefaultBaseURL()}/clangd.wasm`
+    static getDefaultWasmURL(useSmallBinary: boolean) {
+        return `${ClangdStdioTransport.getDefaultBaseURL(useSmallBinary)}/clangd.wasm`
     }
 
     constructor(options?: ClangdStdioTransportOptions) {
@@ -163,8 +168,12 @@ class ClangdStdioTransport extends Transport {
             this.options = {}
         }
 
+        if (this.options.useSmallBinary === undefined) {
+            this.options.useSmallBinary = false;
+        }
+
         if (!this.options.baseURL) {
-            this.options.baseURL = ClangdStdioTransport.getDefaultBaseURL()
+            this.options.baseURL = ClangdStdioTransport.getDefaultBaseURL(this.options.useSmallBinary)
         }
 
         if (!this.options.debug) {

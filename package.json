@@ -1,6 +1,6 @@
 {
   "name": "@clangd-wasm/clangd-wasm",
-  "version": "15.0.7-dev4",
+  "version": "15.0.7-dev5",
   "main": "dist/index.js",
   "types": "dist/src/index.d.ts",
   "scripts": {
@@ -10,12 +10,13 @@
   "author": "ConorBobbleHat",
   "license": "MIT",
   "devDependencies": {
+    "@clangd-wasm/core": "^15.0.7",
+    "@clangd-wasm/core-small": "^15.0.7",
     "rimraf": "^5.0.0",
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.4",
     "webpack": "^5.80.0",
-    "webpack-cli": "^5.0.2",
-    "@clangd-wasm/core": "^15.0.7"
+    "webpack-cli": "^5.0.2"
   },
   "dependencies": {
     "@open-rpc/client-js": "^1.8.1"
